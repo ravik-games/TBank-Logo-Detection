@@ -1,0 +1,36 @@
+# Version control and system files
+.git/
+.gitignore
+.DS_Store
+
+# Python cache and build
+__pycache__/
+*.py[cod]
+*.so
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Development and tests
+.env
+venv/
+ENV/
+tests/
+.coverage
+.pytest_cache/
+
+# IDE and environment
+.idea/
+.vscode/
+*.log
+*.swp
+
+# ML and data
+data/
+models/
+weights/
+*.pt
+*.pth
+*.onnx
+runs/
