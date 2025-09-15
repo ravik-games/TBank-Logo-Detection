@@ -1,7 +1,9 @@
-FROM python:3.11-slim
+FROM ultralytics/ultralytics:8.3.199-cpu
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    MODEL_PATH=/models/yolov11s.pt \
+    DEVICE=cpu
 
 WORKDIR /app
 

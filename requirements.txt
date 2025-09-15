@@ -1,3 +1,4 @@
+pydantic-settings
 fastapi~=0.116.1
 pillow~=11.3.0
 uvicorn~=0.35.0
