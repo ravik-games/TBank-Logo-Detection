@@ -1,3 +1,4 @@
+"""Маршруты HTTP API: проверка здоровья и детекция логотипа."""
 from fastapi import APIRouter, UploadFile
 
 from app.core.exceptions import APIException
@@ -9,11 +10,16 @@ router = APIRouter()
 
 @router.get("/health")
 async def health() -> dict:
+    """Проверка доступности сервиса."""
     return {"status": "ok"}
 
 
 @router.post("/detect", response_model=DetectionResponse)
 async def detect_logo(file: UploadFile):
+    """Детекция логотипов на изображении.
+
+    Принимает файл изображения, валидирует его и возвращает список найденных боксов.
+    """
     image, _fmt, width, height = read_image_from_upload(file)
 
     # Инференс

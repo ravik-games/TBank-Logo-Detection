@@ -1,11 +1,15 @@
-FROM ultralytics/ultralytics:8.3.199-cpu
+FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    MODEL_PATH=/models/yolov11s.pt \
+    MODEL_PATH=/models/model.onnx \
     DEVICE=cpu
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
 # Обновление pip
 RUN pip install --no-cache-dir --upgrade pip

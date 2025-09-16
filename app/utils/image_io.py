@@ -1,3 +1,4 @@
+"""Утилиты чтения и валидации изображений из UploadFile (FastAPI)."""
 import io
 from typing import Tuple
 from PIL import Image, UnidentifiedImageError
@@ -41,12 +42,12 @@ def read_image_from_upload(file) -> Tuple[Image.Image, str, int, int]:
         raise APIException(status_code=400, error="Empty Body", detail="Uploaded file is empty")
 
     try:
-        # verify
+        # Проверка целостности файла изображения
         tmp = io.BytesIO(buf.getvalue())
         with Image.open(tmp) as im_verify:
             im_verify.verify()
 
-        # open for work
+        # Открытие изображение для дальнейшей обработки
         img_io = io.BytesIO(buf.getvalue())
         image = Image.open(img_io)
         image_format = (image.format or "").upper()

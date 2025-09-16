@@ -1,3 +1,4 @@
+"""Единая обработка ошибок и формат ответов для FastAPI."""
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
@@ -20,6 +21,7 @@ class APIException(HTTPException):
 
 
 async def api_exception_handler(request, exc: APIException):
+    """Обработчик наших API-исключений: возвращает JSON с кодом и сообщением."""
     if 400 <= exc.status_code < 500:
         logger.warning(f"{exc.status_code} {exc.error}: {exc.detail}")
     else:
@@ -31,6 +33,7 @@ async def api_exception_handler(request, exc: APIException):
 
 
 async def validation_exception_handler(request, exc: RequestValidationError):
+    """Обработчик ошибок валидации FastAPI (422)."""
     logger.warning(f"422 Validation Error: {exc}")
     return JSONResponse(
         status_code=422,
@@ -39,6 +42,7 @@ async def validation_exception_handler(request, exc: RequestValidationError):
 
 
 async def general_exception_handler(request, exc: Exception):
+    """Фолбэк-обработчик неперехваченных ошибок (500)."""
     logger.exception("Unhandled error")
     return JSONResponse(
         status_code=500,

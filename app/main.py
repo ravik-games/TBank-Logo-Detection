@@ -1,3 +1,4 @@
+"""Точка входа FastAPI-приложения для детекции логотипов."""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -14,9 +15,10 @@ from app.services.inference import InferenceService
 
 
 def create_app() -> FastAPI:
+    """Создание и настройка экземпляра FastAPI (CORS, роуты, обработчики ошибок)."""
     app = FastAPI(title="TBank Logo Detection API")
 
-    # CORS
+    # Настройка CORS
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ALLOW_ORIGINS,
@@ -25,20 +27,21 @@ def create_app() -> FastAPI:
         allow_headers=settings.CORS_ALLOW_HEADERS,
     )
 
-    # Services
+    # Инициализация сервисов
     inference_service = InferenceService()
     setattr(router, "inference_service", inference_service)
 
-    # Routers
+    # Подключение роутеров
     app.include_router(router)
 
-    # Exceptions
+    # Обработчики исключений
     app.add_exception_handler(APIException, api_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(Exception, general_exception_handler)
 
     @app.get("/")
     async def root() -> dict:
+        """Короткая справка по сервису и доступным эндпойнтам."""
         return {"name": "TBank Logo Detection API", "version": "1.0", "endpoints": ["/health", "/detect"]}
 
     return app
