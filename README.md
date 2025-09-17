@@ -1,6 +1,5 @@
 # TBank Logo Detection
 
-**Работу выполнил: Близниченко Алексей в рамках отбора на смену ML в Сириус**
 
 <details open>
 <summary>Разделы</summary>
@@ -11,6 +10,116 @@
 </details>
 
 # Установка и запуск
+
+Рекомендуемый способ запуска — через Docker; локальный запуск без контейнера предназначен для разработки. По умолчанию сервис слушает порт 8000 и предоставляет HTTP API (FastAPI) с эндпойнтами /health и /detect.
+
+## Что потребуется
+- Docker и Docker Compose (v2).
+- Git и интернет‑доступ для загрузки образов/зависимостей.
+- Файл модели: по умолчанию используется models/model.onnx (YOLOv11n, в репозитории); при необходимости может быть заменён.
+
+## Запуск в Docker (рекомендуемый)
+Используется базовый образ python:3.11-slim. Модель монтируется в контейнер в режиме только для чтения.
+
+- Сборка образа:
+  - `docker build -t tbank-logo-api .`
+- Запуск (CPU):
+  - Windows (PowerShell):
+    - `docker run --rm -p 8000:8000 -v ${PWD}\models:/models:ro -e MODEL_PATH=/models/model.onnx -e DEVICE=cpu tbank-logo-api`
+  - Linux/macOS:
+    - `docker run --rm -p 8000:8000 -v $(pwd)/models:/models:ro -e MODEL_PATH=/models/model.onnx -e DEVICE=cpu tbank-logo-api`
+- Docker Compose:
+  - `docker compose up -d`
+  - По умолчанию публикуется порт 8000; модель берётся из ./models. Переменные окружения настраиваются в docker-compose.yml.
+
+Примечание по GPU:
+- Базовая конфигурация образа использует onnxruntime (CPU).
+- Для использования NVIDIA GPU требуется:
+  - заменить зависимость onnxruntime на onnxruntime-gpu в requirements.txt и пересобрать образ;
+  - указать `DEVICE=cuda:0`;
+  - запускать контейнер с поддержкой GPU: `docker run --gpus all ...`.
+
+## Альтернативный локальный запуск (без Docker)
+1. Клонировать репозиторий и перейти в папку проекта:
+   - Windows (PowerShell):
+     - `git clone https://github.com/…/Tbank-Logo-Detection.git`
+     - `cd Tbank-Logo-Detection`
+   - Linux/macOS:
+     - `git clone https://github.com/…/Tbank-Logo-Detection.git`
+     - `cd Tbank-Logo-Detection`
+2. Создать и активировать виртуальное окружение:
+   - Windows (PowerShell):
+     - `py -3.11 -m venv .venv`
+     - `..\.venv\Scripts\Activate`
+   - Linux/macOS:
+     - `python3.11 -m venv .venv`
+     - `source .venv/bin/activate`
+3. Установить зависимости:
+   - `python -m pip install -U pip`
+   - `pip install -r requirements.txt`
+4. (Опционально) Создать файл .env с параметрами (пример ниже).
+5. Запустить API:
+   - Для разработки (автоперезапуск): `uvicorn app.main:app --reload --host 0.0.0.0 --port 8000`
+   - Для запуска без автоперезапуска: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+6. Проверить работу:
+   - Открыть http://127.0.0.1:8000/docs
+   - Или: `curl http://127.0.0.1:8000/health`
+
+## Переменные окружения
+Параметры вынесены в настройки Pydantic. Источники:
+- переменные окружения;
+- файл .env в корне проекта;
+- docker-compose.yml.
+
+Ключевые параметры и значения по умолчанию:
+- MODEL_PATH: путь к ONNX‑модели. По умолчанию `./models/model.onnx` (локально) или `/models/model.onnx` (в Docker по compose).
+- DEVICE: `cpu` или `cuda:0` (при наличии GPU-провайдера). По умолчанию `cpu`.
+- CONF_THRESH: порог доверия, по умолчанию `0.25`.
+- IOU_THRESH: порог IoU для NMS, по умолчанию `0.5`.
+- MAX_IMAGE_MB: максимальный размер загружаемого изображения (МБ), по умолчанию `100`.
+- ALLOWED_FORMATS: допустимые форматы, по умолчанию `{"JPEG","PNG","BMP","WEBP"}`.
+- CORS_ALLOW_*: параметры CORS (по умолчанию открыты для удобства тестирования).
+
+Пример .env:
+```
+MODEL_PATH=./models/model.onnx
+DEVICE=cpu
+CONF_THRESH=0.25
+IOU_THRESH=0.5
+MAX_IMAGE_MB=100
+ALLOWED_FORMATS=JPEG,PNG,BMP,WEBP
+```
+
+## Эндпойнты и проверка
+- Корень сервиса:
+  - GET `/` → краткая справка и список эндпойнтов.
+- Проверка здоровья:
+  - GET `/health` → `{ "status": "ok" }`.
+- Детекция логотипов:
+  - POST `/detect` (multipart/form-data) с полем `file`.
+
+Примеры запросов:
+- curl (Windows PowerShell):
+  - `curl -Method POST http://127.0.0.1:8000/detect -Form file=@"C:\\path\\to\\image.jpg"`
+- curl (Linux/macOS):
+  - `curl -X POST http://127.0.0.1:8000/detect -F file=@/path/to/image.jpg`
+
+Пример ответа:
+```
+{
+  "detections": [
+    { "bbox": { "x_min": 123, "y_min": 45, "x_max": 456, "y_max": 300 } }
+  ]
+}
+```
+При отсутствии детекций: `{"detections": []}`.
+
+## Частые ошибки и способы решения
+- Модель не найдена: проверьте MODEL_PATH и наличие файла модели (в Docker — корректность примонтированного тома `./models:/models:ro`).
+- Слишком большой файл (413): уменьшите изображение или увеличьте `MAX_IMAGE_MB`.
+- Неподдерживаемый формат (400): допустимые форматы задаются `ALLOWED_FORMATS`.
+- Ошибки валидации 422: убедитесь, что поле запроса называется `file` и отправляется как multipart/form-data.
+- GPU не используется: установите onnxruntime-gpu, задайте `DEVICE=cuda:0`, для Docker добавьте `--gpus all` и используйте образ, собранный с onnxruntime-gpu.
 
 # Подход к решению
 

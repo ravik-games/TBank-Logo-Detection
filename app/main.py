@@ -29,7 +29,7 @@ def create_app() -> FastAPI:
 
     # Инициализация сервисов
     inference_service = InferenceService()
-    setattr(router, "inference_service", inference_service)
+    app.state.inference_service = inference_service
 
     # Подключение роутеров
     app.include_router(router)
